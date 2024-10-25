@@ -1,0 +1,19 @@
+模型中文名：使用多层次提示词的video caption模型
+模型英文名：video caption model using multi-level prompt words
+模型缩写：MLP
+我们最终输出时使用的分词技术是基于bert的分词，所以需要下载bert的分词；
+我们是以clip为基础的模型，所以需要从github中下载clip模型及参数；
+然后我已经将MSRVTT、MSVD数据集的captions按照train、valid、test划分好了，存放在captions文件夹中；
+现在我们需要进行是数据的预处理，首先需要需要对视频进行抽帧操作，对于每一个视频均匀采样20帧。
+然后对于抽取出来的图片我们存放在frame文件夹下，之后需要进行使用CLIP提供的preprocess进行裁剪，变形，归一化等操作。
+然后使用预训练好的CLIP模型的img_encoder进行视频特征的提取。
+然后将得到的每个视频的特征保存在对应文件夹下。(需要建立对应的保存文件夹，详见config.py文件夹)；
+现在我们将MSVD、MSRVTT的train、test、valid中的视频全部都提取出了视频特征，然后保存在对应位置，比如MSRVTT_frame/train/video0/feature.pt文件。
+之所以按照视频名来分开保存，是为了在使用迭代器来做dataset时节约空间和时间。
+在对captions进行分词之前我们先对captions的长度分布做了统计测量,对于MSRVTT和MSVD的captions的长度的分布做了boxplot绘制，
+做了中位数、众数、平均数、方差的数据统计和绘制。其中captions的长度是指每一句中tokens的个数。
+对于分词器，我们使用的是bert_base_uncased，我们将hugging face上下载下来的bert的相关配置文件放在bert_base_uncased文件夹下。
+然后使用分词器对captions进行分词和truncpad(max_len=20)，存储为HDF5文件，
+因为HDF5文件有利于我们使用IterableDataset，可以加速字典读取流程，数据加载流程。
+我们的baseline模型是transformer的encoder和decoder，在encoder模块，输入是提前提取好的视频特征torch.szie(batch_size,20,512)，
+对于decoder部分，我们的tgt是经过bert的tokenizer分词处理后的captions的特征。
